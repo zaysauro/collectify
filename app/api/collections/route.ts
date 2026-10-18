@@ -1,3 +1,5 @@
 import {NextResponse} from "next/server";
 import {currentUser,ensureProfile,sql} from "../../../lib/db";
 export async function POST(req:Request){const user=await currentUser();if(!user)return NextResponse.json({error:"Não autorizado"},{status:401});let body;try{body=await req.json()}catch{return NextResponse.json({error:"JSON inválido"},{status:400})}const name=typeof body.name==="string"?body.name.trim():"";const visibility=body.visibility;if(name.length<1||name.length>100||!["private","friends","public"].includes(visibility))return NextResponse.json({error:"Dados inválidos"},{status:400});await ensureProfile(user);const rows=await sql`INSERT INTO public.collectify_collections(owner_id,name,visibility) VALUES(${user.id},${name},${visibility}) RETURNING id,name,visibility`;return NextResponse.json({collection:rows[0]},{status:201})}
+
+export async function GET(){const user=await currentUser();if(!user)return NextResponse.json({error:"Não autorizado"},{status:401});const rows=await sql`SELECT id,name,visibility FROM public.collectify_collections WHERE owner_id=${user.id} ORDER BY created_at DESC`;return NextResponse.json({collections:rows})}
